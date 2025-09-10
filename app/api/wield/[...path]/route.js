@@ -1,36 +1,51 @@
-// lib/wield.js
+// app/api/wield/[...path]/route.js
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-// Public chainId (Base = 8453)
-export const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 8453);
-
-// Always proxy via our server route so we can add API key safely
-export async function wieldFetch(path, init = {}) {
-  const clean = String(path || "").replace(/^\/?/, "");
-  const res = await fetch(`/api/wield/${clean}`, {
-    ...init,
-    cache: "no-store"
-  });
-  if (!res.ok) {
-    const t = await safeText(res);
-    throw new Error(`Wield ${res.status} ${t || ""}`.trim());
+// Simple proxy to Wield API. Keeps API key on the server.
+export async function GET(req, { params }) {
+  try {
+    const base = process.env.NEXT_PUBLIC_WIELD_API || "https://api.wield.xyz/v1";
+    const pathParts = params.path || [];
+    const suffix = req.nextUrl.search || "";
+    const upstream = `${base}/${pathParts.join("/")}${suffix}`;
+    const r = await fetch(upstream, {
+      headers: {
+        "x-api-key": process.env.WIELD_API_KEY || ""
+      },
+      next: { revalidate: 0 }
+    });
+    const text = await r.text();
+    return new Response(text, {
+      status: r.status,
+      headers: { "content-type": r.headers.get("content-type") || "application/json" }
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ success: false, message: e.message }), { status: 500 });
   }
-  const ct = res.headers.get("content-type") || "";
-  if (ct.includes("application/json")) return res.json();
-  const txt = await res.text();
-  try { return JSON.parse(txt); } catch { return txt; }
 }
 
-// Format helpers
-export function usdFmt(n, max = 2) {
-  if (n == null || isNaN(n)) return "";
-  return `$${Number(n).toLocaleString(undefined, { maximumFractionDigits: max })}`;
-}
-export function usdNum(x) {
-  const v = x?.usdPrice ?? x?.priceUsd ?? x?.price_usd ?? x?.priceUSD ?? x?.metadata?.usdPrice ?? null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-}
-
-async function safeText(r) {
-  try { return await r.text(); } catch { return ""; }
+export async function POST(req, { params }) {
+  try {
+    const base = process.env.NEXT_PUBLIC_WIELD_API || "https://api.wield.xyz/v1";
+    const pathParts = params.path || [];
+    const suffix = req.nextUrl.search || "";
+    const upstream = `${base}/${pathParts.join("/")}${suffix}`;
+    const body = await req.text();
+    const r = await fetch(upstream, {
+      method: "POST",
+      headers: {
+        "x-api-key": process.env.WIELD_API_KEY || "",
+        "content-type": req.headers.get("content-type") || "application/json"
+      },
+      body
+    });
+    const text = await r.text();
+    return new Response(text, {
+      status: r.status,
+      headers: { "content-type": r.headers.get("content-type") || "application/json" }
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ success: false, message: e.message }), { status: 500 });
+  }
 }
