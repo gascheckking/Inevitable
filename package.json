@@ -1,7 +1,7 @@
 {
-  "name": "trackbased-mix",
+  "name": "vibetracker-mix",
   "private": true,
-  "version": "0.2.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3000",
