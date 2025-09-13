@@ -1,10 +1,9 @@
-// app/layout.jsx
-import "./globals.css";
-
 export const metadata = {
-  title: "TrackBased — Vibe Tracker",
-  description: "VibeMarket activity • marketplace • pulls • verified creators • trade"
+  title: "Vibe Tracker — Mixed",
+  description: "Packs • Pulls • Trading • Verified"
 };
+
+import "./globals.css";
 
 export default function RootLayout({ children }) {
   return (
